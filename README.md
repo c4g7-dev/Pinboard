@@ -6,10 +6,13 @@ A minimal, AMOLED-dark mod suggestion board for Minecraft modpacks. Users sign u
 
 - **Mod Suggestions** — Users submit mod links with automatic OG preview cards (title, description, thumbnail)
 - **Voting** — Upvote/downvote system so the community can prioritize suggestions
-- **Status Workflow** — Admins can mark suggestions as Accepted, Added, or Rejected
-- **Update Thread** — Changelog system for posting modpack updates with added/removed mod diffs; optionally clears resolved suggestions
+- **Status Workflow** — Admins can mark suggestions as Pending, Accepted, Added, or Rejected
+- **Update Thread** — Changelog system for posting modpack updates with added/removed mod diffs
+- **Suggestion Archiving** — Resolved suggestions (added/rejected) are automatically archived to the related update article instead of being deleted, preserving a full history
+- **Download Hub** — Each update can include download links for CurseForge, Modrinth, and Prism Launcher with self-hosted file serving from `public/downloads/`
+- **Dashboard Downloads Banner** — The main board shows a prominent "Latest Release" hero card with the modpack version title and platform download buttons
 - **Admin Panel** — Manage users, edit/delete suggestions, full control
-- **AMOLED Dark Theme** — Pure black background with oklch accent colors
+- **AMOLED Dark Theme** — Pure black background with oklch accent colors and gradient accents
 - **CurseForge Support** — Uses cfwidget API to bypass Cloudflare for CurseForge link previews
 
 ## Tech Stack
@@ -41,8 +44,9 @@ As an admin you can:
 
 - Delete any suggestion or user
 - Edit suggestion text and status
-- Set a suggestion's status to **Accepted**, **Added**, or **Rejected**
-- Post **Update Articles** at `/updates` — changelog entries showing which mods were added/removed, with an option to clear all resolved (added/rejected) suggestions
+- Set a suggestion's status to **Pending**, **Accepted**, **Added**, or **Rejected**
+- Post **Update Articles** at `/updates` — changelog entries showing which mods were added/removed, with platform download links
+- **Archive resolved suggestions** to an update — added/rejected suggestions are linked to the article and displayed with usernames under "Resolved Suggestions"
 - Access the **Admin** panel (shield icon in the header)
 
 ## Environment Variables
