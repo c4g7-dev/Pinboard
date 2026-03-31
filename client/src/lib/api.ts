@@ -45,6 +45,8 @@ export const api = {
     apiFetch(`/api/admin/users/${id}`, { method: "DELETE" }),
 
   // Updates
+  latestDownloads: () =>
+    apiFetch("/api/updates/downloads"),
   listUpdates: () =>
     apiFetch("/api/updates"),
   createUpdate: (title: string, body: string, clearResolved: boolean = false, downloads?: { curseforge?: string; modrinth?: string; prism?: string }) =>

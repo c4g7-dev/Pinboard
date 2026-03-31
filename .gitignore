@@ -5,3 +5,5 @@ node_modules/
 sessions.db
 client/node_modules/
 client/dist/
+public/downloads/*
+!public/downloads/.gitkeep

@@ -4,6 +4,20 @@ const { requireAuth, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
+// Get latest download links (lightweight, requires auth)
+router.get('/downloads', requireAuth, (req, res) => {
+  try {
+    const row = db.prepare(
+      "SELECT id, title, downloads FROM updates WHERE downloads IS NOT NULL ORDER BY created_at DESC LIMIT 1"
+    ).get();
+    if (!row || !row.downloads) return res.json(null);
+    res.json({ id: row.id, title: row.title, downloads: JSON.parse(row.downloads) });
+  } catch (err) {
+    console.error('Get downloads error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // List all updates (newest first) with their archived suggestions
 router.get('/', requireAuth, (req, res) => {
   try {

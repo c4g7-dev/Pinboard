@@ -65,6 +65,9 @@ app.use('/api', apiLimiter);
 const clientDist = path.join(__dirname, 'client', 'dist');
 app.use(express.static(clientDist));
 
+// Serve downloadable files
+app.use('/downloads', express.static(path.join(__dirname, 'public', 'downloads')));
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/suggestions', suggestionsRoutes);
