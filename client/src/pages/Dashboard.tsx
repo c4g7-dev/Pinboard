@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ChevronUp, ChevronDown, Trash2, Plus, ArrowUpDown, Clock, LogOut, Shield, Pin, CircleCheck, PackageCheck } from "lucide-react"
+import { ChevronUp, ChevronDown, Trash2, Plus, ArrowUpDown, Clock, LogOut, Shield, Pin, CircleCheck, PackageCheck, XCircle, Pencil, X, Save, Newspaper } from "lucide-react"
 
 function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime()
+  // Ensure UTC interpretation: SQLite datetimes lack 'Z' suffix
+  const utc = dateStr.endsWith('Z') || dateStr.includes('+') ? dateStr : dateStr + 'Z'
+  const diff = Date.now() - new Date(utc).getTime()
   const mins = Math.floor(diff / 60000)
   if (mins < 1) return "just now"
   if (mins < 60) return `${mins}m ago`
@@ -82,11 +84,23 @@ export default function Dashboard() {
     } catch { /* ignore */ }
   }
 
-  const handleSetStatus = async (id: number, status: "pending" | "accepted" | "added") => {
+  const handleSetStatus = async (id: number, status: "pending" | "accepted" | "added" | "rejected") => {
     try {
       await api.setStatus(id, status)
       setSuggestions(prev =>
         prev.map(s => s.id === id ? { ...s, status } : s)
+      )
+    } catch { /* ignore */ }
+  }
+
+  const handleEdit = async (id: number, mod_name: string, mod_url?: string) => {
+    try {
+      const data = await api.editSuggestion(id, mod_name, mod_url) as {
+        id: number; mod_name: string; mod_url: string | null;
+        og_title: string | null; og_desc: string | null; og_image: string | null
+      }
+      setSuggestions(prev =>
+        prev.map(s => s.id === id ? { ...s, ...data } : s)
       )
     } catch { /* ignore */ }
   }
@@ -100,6 +114,11 @@ export default function Dashboard() {
             <Pin className="h-4 w-4" /> Pinboard
           </h1>
           <div className="flex items-center gap-3">
+            <Link to="/updates">
+              <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
+                <Newspaper className="h-4 w-4" /> Updates
+              </Button>
+            </Link>
             {user.is_admin === 1 && (
               <Link to="/admin">
                 <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
@@ -185,6 +204,7 @@ export default function Dashboard() {
                 onVote={handleVote}
                 onDelete={handleDelete}
                 onSetStatus={handleSetStatus}
+                onEdit={handleEdit}
               />
             ))}
           </div>
@@ -201,25 +221,37 @@ function SuggestionCard({
   onVote,
   onDelete,
   onSetStatus,
+  onEdit,
 }: {
   suggestion: Suggestion
   isOwn: boolean
   isAdmin: boolean
   onVote: (id: number, currentVote: number | null, direction: 1 | -1) => void
   onDelete: (id: number) => void
-  onSetStatus: (id: number, status: "pending" | "accepted" | "added") => void
+  onSetStatus: (id: number, status: "pending" | "accepted" | "added" | "rejected") => void
+  onEdit: (id: number, mod_name: string, mod_url?: string) => void
 }) {
   const canDelete = isOwn || isAdmin
+  const [editing, setEditing] = useState(false)
+  const [editName, setEditName] = useState(s.mod_name)
+  const [editUrl, setEditUrl] = useState(s.mod_url || "")
 
   const statusConfig = {
-    pending: { label: null, icon: null, color: "" },
-    accepted: { label: "Accepted", icon: CircleCheck, color: "text-emerald-400" },
-    added: { label: "Added", icon: PackageCheck, color: "text-emerald-400" },
+    pending: { label: null, icon: null, color: "", border: "" },
+    accepted: { label: "Accepted", icon: CircleCheck, color: "text-emerald-400", border: "border-emerald-400/30" },
+    added: { label: "Added", icon: PackageCheck, color: "text-emerald-400", border: "border-emerald-400/30" },
+    rejected: { label: "Rejected", icon: XCircle, color: "text-red-400", border: "border-red-400/30" },
   }
   const st = statusConfig[s.status] || statusConfig.pending
 
+  const handleSaveEdit = () => {
+    if (!editName.trim()) return
+    onEdit(s.id, editName.trim(), editUrl.trim() || undefined)
+    setEditing(false)
+  }
+
   return (
-    <Card className={`flex gap-3 p-4 ${s.status !== "pending" ? "border-emerald-400/30" : ""}`}>
+    <Card className={`flex gap-3 p-4 ${st.border} ${s.status === "rejected" ? "opacity-60" : ""}`}>
       {/* Vote Controls */}
       <div className="flex flex-col items-center gap-0.5 pt-0.5">
         <button
@@ -251,38 +283,73 @@ function SuggestionCard({
 
       {/* Body */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <h3 className="font-semibold leading-snug truncate">{s.mod_name}</h3>
-            {st.icon && (
-              <span className={`flex items-center gap-1 shrink-0 ${st.color}`} title={st.label!}>
-                <st.icon className="h-4 w-4" />
-              </span>
-            )}
+        {editing ? (
+          <div className="space-y-2">
+            <Input
+              value={editName}
+              onChange={e => setEditName(e.target.value)}
+              placeholder="Mod name..."
+              maxLength={100}
+            />
+            <Input
+              value={editUrl}
+              onChange={e => setEditUrl(e.target.value)}
+              placeholder="Link (optional)"
+              type="url"
+            />
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleSaveEdit} className="gap-1">
+                <Save className="h-3.5 w-3.5" /> Save
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => { setEditing(false); setEditName(s.mod_name); setEditUrl(s.mod_url || "") }} className="gap-1">
+                <X className="h-3.5 w-3.5" /> Cancel
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-1 shrink-0">
-            {isAdmin && (
-              <select
-                value={s.status}
-                onChange={e => onSetStatus(s.id, e.target.value as "pending" | "accepted" | "added")}
-                className="text-xs bg-secondary text-muted-foreground border border-border rounded px-1.5 py-0.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
-              >
-                <option value="pending">Pending</option>
-                <option value="accepted">Accepted</option>
-                <option value="added">Added</option>
-              </select>
-            )}
-            {canDelete && (
-              <button
-                onClick={() => onDelete(s.id)}
-                className="text-muted-foreground hover:text-destructive transition-colors p-1 cursor-pointer"
-                title="Delete"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-        </div>
+        ) : (
+          <>
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <h3 className={`font-semibold leading-snug truncate ${s.status === "rejected" ? "line-through" : ""}`}>{s.mod_name}</h3>
+                {st.icon && (
+                  <span className={`flex items-center gap-1 shrink-0 ${st.color}`} title={st.label!}>
+                    <st.icon className="h-4 w-4" />
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                {isAdmin && (
+                  <select
+                    value={s.status}
+                    onChange={e => onSetStatus(s.id, e.target.value as "pending" | "accepted" | "added" | "rejected")}
+                    className="text-xs bg-secondary text-muted-foreground border border-border rounded px-1.5 py-0.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="accepted">Accepted</option>
+                    <option value="added">Added</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                )}
+                {isAdmin && (
+                  <button
+                    onClick={() => setEditing(true)}
+                    className="text-muted-foreground hover:text-primary transition-colors p-1 cursor-pointer"
+                    title="Edit"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                {canDelete && (
+                  <button
+                    onClick={() => onDelete(s.id)}
+                    className="text-muted-foreground hover:text-destructive transition-colors p-1 cursor-pointer"
+                    title="Delete"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
 
         <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
           <span>@{s.username}</span>
@@ -290,8 +357,14 @@ function SuggestionCard({
           <span>{timeAgo(s.created_at)}</span>
           {isOwn && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">you</Badge>}
           {s.status !== "pending" && (
-            <Badge className={`text-[10px] px-1.5 py-0 ${s.status === "added" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-emerald-500/10 text-emerald-400/80 border-emerald-500/20"}`}>
-              {s.status === "accepted" ? "Accepted" : "Added"}
+            <Badge className={`text-[10px] px-1.5 py-0 ${
+              s.status === "rejected"
+                ? "bg-red-500/20 text-red-400 border-red-500/30"
+                : s.status === "added"
+                  ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                  : "bg-emerald-500/10 text-emerald-400/80 border-emerald-500/20"
+            }`}>
+              {s.status === "accepted" ? "Accepted" : s.status === "added" ? "Added" : "Rejected"}
             </Badge>
           )}
         </div>
@@ -334,6 +407,8 @@ function SuggestionCard({
             {s.mod_url}
           </a>
         ) : null}
+          </>
+        )}
       </div>
     </Card>
   )

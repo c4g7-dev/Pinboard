@@ -10,6 +10,7 @@ const authRoutes = require('./routes/auth');
 const suggestionsRoutes = require('./routes/suggestions');
 const votesRoutes = require('./routes/votes');
 const adminRoutes = require('./routes/admin');
+const updatesRoutes = require('./routes/updates');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -22,6 +23,7 @@ app.use(helmet({
       imgSrc: ["'self'", "https:", "http:"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       scriptSrc: ["'self'"],
+      upgradeInsecureRequests: null,
     },
   },
 }));
@@ -68,6 +70,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/suggestions', suggestionsRoutes);
 app.use('/api/suggestions', votesRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/updates', updatesRoutes);
 
 // 404 for unknown API routes
 app.use('/api', (req, res) => {

@@ -31,6 +31,8 @@ export const api = {
     apiFetch(`/api/suggestions/${id}`, { method: "DELETE" }),
   setStatus: (id: number, status: string) =>
     apiFetch(`/api/suggestions/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) }),
+  editSuggestion: (id: number, mod_name: string, mod_url?: string) =>
+    apiFetch(`/api/suggestions/${id}`, { method: "PATCH", body: JSON.stringify({ mod_name, mod_url: mod_url || undefined }) }),
 
   // Votes
   vote: (suggestionId: number, value: number) =>
@@ -41,4 +43,12 @@ export const api = {
     apiFetch("/api/admin/users"),
   deleteUser: (id: number) =>
     apiFetch(`/api/admin/users/${id}`, { method: "DELETE" }),
+
+  // Updates
+  listUpdates: () =>
+    apiFetch("/api/updates"),
+  createUpdate: (title: string, body: string, clearResolved: boolean = false) =>
+    apiFetch("/api/updates", { method: "POST", body: JSON.stringify({ title, body, clearResolved }) }),
+  deleteUpdate: (id: number) =>
+    apiFetch(`/api/updates/${id}`, { method: "DELETE" }),
 }

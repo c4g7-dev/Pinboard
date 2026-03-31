@@ -149,7 +149,7 @@ router.patch('/:id/status', requireAuth, (req, res) => {
     if (isNaN(id)) return res.status(400).json({ error: 'Invalid ID' });
 
     const { status } = req.body;
-    if (!['pending', 'accepted', 'added'].includes(status)) {
+    if (!['pending', 'accepted', 'added', 'rejected'].includes(status)) {
       return res.status(400).json({ error: 'Invalid status' });
     }
 
@@ -163,6 +163,76 @@ router.patch('/:id/status', requireAuth, (req, res) => {
     res.json({ id, status });
   } catch (err) {
     console.error('Update status error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Edit suggestion (admin only)
+router.patch('/:id', requireAuth, async (req, res) => {
+  try {
+    if (!req.user.is_admin) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) return res.status(400).json({ error: 'Invalid ID' });
+
+    const existing = db.prepare('SELECT * FROM suggestions WHERE id = ?').get(id);
+    if (!existing) {
+      return res.status(404).json({ error: 'Suggestion not found' });
+    }
+
+    let { mod_name, mod_url } = req.body;
+
+    if (mod_name !== undefined) {
+      if (typeof mod_name !== 'string' || !mod_name.trim()) {
+        return res.status(400).json({ error: 'Mod name cannot be empty' });
+      }
+      mod_name = mod_name.trim().slice(0, 100);
+    } else {
+      mod_name = existing.mod_name;
+    }
+
+    // Handle URL: fetch OG data if URL changed
+    let og_title = existing.og_title;
+    let og_desc = existing.og_desc;
+    let og_image = existing.og_image;
+
+    if (mod_url !== undefined) {
+      if (mod_url && typeof mod_url === 'string') {
+        mod_url = mod_url.trim();
+        try {
+          const parsed = new URL(mod_url);
+          if (!['http:', 'https:'].includes(parsed.protocol)) {
+            return res.status(400).json({ error: 'URL must be http or https' });
+          }
+        } catch {
+          return res.status(400).json({ error: 'Invalid URL' });
+        }
+        // Only re-fetch OG if URL actually changed
+        if (mod_url !== existing.mod_url) {
+          const og = await fetchOG(mod_url);
+          og_title = og.og_title;
+          og_desc = og.og_desc;
+          og_image = og.og_image;
+        }
+      } else {
+        mod_url = null;
+        og_title = null;
+        og_desc = null;
+        og_image = null;
+      }
+    } else {
+      mod_url = existing.mod_url;
+    }
+
+    db.prepare(
+      'UPDATE suggestions SET mod_name = ?, mod_url = ?, og_title = ?, og_desc = ?, og_image = ? WHERE id = ?'
+    ).run(mod_name, mod_url, og_title, og_desc, og_image, id);
+
+    res.json({ id, mod_name, mod_url, og_title, og_desc, og_image });
+  } catch (err) {
+    console.error('Edit suggestion error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });

@@ -12,10 +12,17 @@ export interface Suggestion {
   og_title: string | null
   og_desc: string | null
   og_image: string | null
-  status: "pending" | "accepted" | "added"
+  status: "pending" | "accepted" | "added" | "rejected"
   created_at: string
   username: string
   user_id: number
   score: number
   user_vote: number | null
+}
+
+export interface Update {
+  id: number
+  title: string
+  body: string
+  created_at: string
 }

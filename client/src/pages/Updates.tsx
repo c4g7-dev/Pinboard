@@ -1,0 +1,216 @@
+import { useState, useEffect } from "react"
+import { useAuth } from "@/lib/auth"
+import { api } from "@/lib/api"
+import type { Update } from "@/lib/types"
+import { Navigate, Link } from "react-router-dom"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card } from "@/components/ui/card"
+import { ArrowLeft, Pin, Plus, Trash2, Newspaper, LogOut } from "lucide-react"
+
+function formatDate(dateStr: string) {
+  const utc = dateStr.endsWith('Z') || dateStr.includes('+') ? dateStr : dateStr + 'Z'
+  const d = new Date(utc)
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+}
+
+function renderBody(body: string) {
+  // Simple line-based rendering: lines starting with + / - / ~ get colored
+  return body.split('\n').map((line, i) => {
+    const trimmed = line.trimStart()
+    if (trimmed.startsWith('+ ')) {
+      return <div key={i} className="text-emerald-400 font-mono text-sm">{line}</div>
+    }
+    if (trimmed.startsWith('- ')) {
+      return <div key={i} className="text-red-400 font-mono text-sm">{line}</div>
+    }
+    if (trimmed.startsWith('~ ')) {
+      return <div key={i} className="text-yellow-400 font-mono text-sm">{line}</div>
+    }
+    if (trimmed.startsWith('## ')) {
+      return <h3 key={i} className="text-base font-bold mt-4 mb-1">{trimmed.slice(3)}</h3>
+    }
+    if (trimmed.startsWith('### ')) {
+      return <h4 key={i} className="text-sm font-semibold mt-3 mb-1 text-muted-foreground">{trimmed.slice(4)}</h4>
+    }
+    if (trimmed === '') {
+      return <div key={i} className="h-2" />
+    }
+    return <div key={i} className="text-sm text-foreground/90">{line}</div>
+  })
+}
+
+export default function UpdatesPage() {
+  const { user, loading: authLoading, logout } = useAuth()
+  const [updates, setUpdates] = useState<Update[]>([])
+  const [loading, setLoading] = useState(true)
+  const [creating, setCreating] = useState(false)
+  const [title, setTitle] = useState("")
+  const [body, setBody] = useState("")
+  const [clearResolved, setClearResolved] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (!user) return
+    ;(async () => {
+      try {
+        const data = await api.listUpdates() as Update[]
+        setUpdates(data)
+      } catch { /* ignore */ }
+      setLoading(false)
+    })()
+  }, [user])
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="h-6 w-6 border-2 border-muted border-t-primary rounded-full animate-spin" />
+      </div>
+    )
+  }
+  if (!user) return <Navigate to="/login" replace />
+
+  const isAdmin = user.is_admin === 1
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!title.trim() || !body.trim()) return
+    setSubmitting(true)
+    try {
+      const data = await api.createUpdate(title.trim(), body.trim(), clearResolved) as Update
+      setUpdates(prev => [data, ...prev])
+      setTitle("")
+      setBody("")
+      setClearResolved(false)
+      setCreating(false)
+    } catch { /* ignore */ }
+    setSubmitting(false)
+  }
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Delete this update?")) return
+    try {
+      await api.deleteUpdate(id)
+      setUpdates(prev => prev.filter(u => u.id !== id))
+    } catch { /* ignore */ }
+  }
+
+  return (
+    <div className="min-h-screen">
+      {/* Top Bar */}
+      <header className="sticky top-0 z-50 px-4 pt-3 pb-0">
+        <div className="max-w-2xl mx-auto flex items-center justify-between px-5 h-12 bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-lg shadow-black/20">
+          <h1 className="text-lg font-bold text-primary flex items-center gap-2">
+            <Pin className="h-4 w-4" /> Pinboard
+          </h1>
+          <div className="flex items-center gap-3">
+            <Link to="/">
+              <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground">
+                <ArrowLeft className="h-4 w-4" /> Board
+              </Button>
+            </Link>
+            <span className="text-sm text-muted-foreground">@{user.username}</span>
+            <Button variant="ghost" size="icon" onClick={logout} title="Logout">
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </header>
+      <div className="h-3" />
+
+      <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Newspaper className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-bold">Modpack Updates</h2>
+          </div>
+          {isAdmin && !creating && (
+            <Button size="sm" onClick={() => setCreating(true)} className="gap-1.5">
+              <Plus className="h-4 w-4" /> New Update
+            </Button>
+          )}
+        </div>
+
+        {/* Create Form (admin) */}
+        {isAdmin && creating && (
+          <Card className="p-4">
+            <form onSubmit={handleCreate} className="space-y-3">
+              <Input
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                placeholder="Update title (e.g. Modpack v2.0 — March 2026)"
+                maxLength={200}
+                required
+              />
+              <textarea
+                value={body}
+                onChange={e => setBody(e.target.value)}
+                placeholder={"Write your update here...\n\nUse + for added mods, - for removed mods\n## for headings"}
+                maxLength={10000}
+                rows={12}
+                required
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-y font-mono"
+              />
+              <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={clearResolved}
+                  onChange={e => setClearResolved(e.target.checked)}
+                  className="rounded border-border"
+                />
+                Clear resolved suggestions (added & rejected) after posting
+              </label>
+              <div className="flex gap-2">
+                <Button type="submit" disabled={submitting} className="gap-1.5">
+                  <Plus className="h-4 w-4" /> {submitting ? "Posting..." : "Post Update"}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setCreating(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </Card>
+        )}
+
+        {/* Updates List */}
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="h-6 w-6 border-2 border-muted border-t-primary rounded-full animate-spin" />
+          </div>
+        ) : updates.length === 0 ? (
+          <div className="text-center py-16 text-muted-foreground">
+            <Newspaper className="h-10 w-10 mx-auto mb-3 opacity-30" />
+            <p className="text-lg mb-1">No updates yet</p>
+            <p className="text-sm">Check back later for modpack changelogs.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {updates.map(u => (
+              <Card key={u.id} className="p-5">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div>
+                    <h3 className="text-lg font-bold leading-snug">{u.title}</h3>
+                    <p className="text-xs text-muted-foreground mt-1">{formatDate(u.created_at)}</p>
+                  </div>
+                  {isAdmin && (
+                    <button
+                      onClick={() => handleDelete(u.id)}
+                      className="text-muted-foreground hover:text-destructive transition-colors p-1 cursor-pointer shrink-0"
+                      title="Delete"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                <div className="border-t border-border pt-3">
+                  {renderBody(u.body)}
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
+  )
+}

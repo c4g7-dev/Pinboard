@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS suggestions (
   og_title TEXT,
   og_desc TEXT,
   og_image TEXT,
-  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'added')),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'added', 'rejected')),
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -27,4 +27,11 @@ CREATE TABLE IF NOT EXISTS votes (
   UNIQUE(user_id, suggestion_id),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (suggestion_id) REFERENCES suggestions(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS updates (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

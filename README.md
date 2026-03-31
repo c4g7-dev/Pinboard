@@ -1,6 +1,16 @@
 # Pinboard
 
-A minimal, AMOLED-dark mod suggestion board. Users sign up with a username and 4-digit PIN, suggest mods (with automatic Open Graph link previews), and vote on each other's suggestions. Admins can mark suggestions as **Accepted** or **Added**.
+A minimal, AMOLED-dark mod suggestion board for Minecraft modpacks. Users sign up with a username and 4-digit PIN, suggest mods (with automatic Open Graph link previews), and vote on each other's suggestions. Admins manage the workflow from suggestion to inclusion.
+
+## Features
+
+- **Mod Suggestions** — Users submit mod links with automatic OG preview cards (title, description, thumbnail)
+- **Voting** — Upvote/downvote system so the community can prioritize suggestions
+- **Status Workflow** — Admins can mark suggestions as Accepted, Added, or Rejected
+- **Update Thread** — Changelog system for posting modpack updates with added/removed mod diffs; optionally clears resolved suggestions
+- **Admin Panel** — Manage users, edit/delete suggestions, full control
+- **AMOLED Dark Theme** — Pure black background with oklch accent colors
+- **CurseForge Support** — Uses cfwidget API to bypass Cloudflare for CurseForge link previews
 
 ## Tech Stack
 
@@ -30,8 +40,10 @@ The app runs on `http://localhost:3000` by default. Set the `PORT` environment v
 As an admin you can:
 
 - Delete any suggestion or user
+- Edit suggestion text and status
+- Set a suggestion's status to **Accepted**, **Added**, or **Rejected**
+- Post **Update Articles** at `/updates` — changelog entries showing which mods were added/removed, with an option to clear all resolved (added/rejected) suggestions
 - Access the **Admin** panel (shield icon in the header)
-- Set a suggestion's status to **Accepted** (green checkmark) or **Added** (green package icon) using the dropdown on each suggestion card
 
 ## Environment Variables
 
