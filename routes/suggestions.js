@@ -31,6 +31,7 @@ router.get('/', (req, res) => {
       FROM suggestions s
       JOIN users u ON u.id = s.user_id
       LEFT JOIN votes v ON v.suggestion_id = s.id
+      WHERE s.update_id IS NULL
       GROUP BY s.id
       ORDER BY ${orderBy}
     `).all();

@@ -20,9 +20,18 @@ export interface Suggestion {
   user_vote: number | null
 }
 
+export interface UpdateSuggestion {
+  id: number
+  mod_name: string
+  mod_url: string | null
+  status: "accepted" | "added" | "rejected"
+  username: string
+}
+
 export interface Update {
   id: number
   title: string
   body: string
   created_at: string
+  suggestions: UpdateSuggestion[]
 }

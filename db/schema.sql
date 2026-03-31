@@ -15,8 +15,10 @@ CREATE TABLE IF NOT EXISTS suggestions (
   og_desc TEXT,
   og_image TEXT,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'added', 'rejected')),
+  update_id INTEGER,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (update_id) REFERENCES updates(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS votes (

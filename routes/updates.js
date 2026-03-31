@@ -4,12 +4,25 @@ const { requireAuth, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
-// List all updates (newest first) — public for logged-in users
+// List all updates (newest first) with their archived suggestions
 router.get('/', requireAuth, (req, res) => {
   try {
     const rows = db.prepare(
       'SELECT id, title, body, created_at FROM updates ORDER BY created_at DESC'
     ).all();
+
+    // Attach archived suggestions to each update
+    const stmtSugg = db.prepare(`
+      SELECT s.id, s.mod_name, s.mod_url, s.status, u.username
+      FROM suggestions s
+      JOIN users u ON u.id = s.user_id
+      WHERE s.update_id = ?
+      ORDER BY s.status ASC, s.mod_name ASC
+    `);
+    for (const row of rows) {
+      row.suggestions = stmtSugg.all(row.id);
+    }
+
     res.json(rows);
   } catch (err) {
     console.error('List updates error:', err);
@@ -34,11 +47,11 @@ router.post('/', requireAdmin, (req, res) => {
       'INSERT INTO updates (title, body) VALUES (?, ?)'
     ).run(title.trim().slice(0, 200), body.trim().slice(0, 10000));
 
-    // Optionally clear resolved suggestions
+    // Optionally archive resolved suggestions to this update
     if (clearResolved) {
       db.prepare(
-        "DELETE FROM suggestions WHERE status IN ('added', 'rejected')"
-      ).run();
+        "UPDATE suggestions SET update_id = ? WHERE status IN ('added', 'rejected') AND update_id IS NULL"
+      ).run(result.lastInsertRowid);
     }
 
     res.json({

@@ -6,7 +6,7 @@ import { Navigate, Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
-import { ArrowLeft, Pin, Plus, Trash2, Newspaper, LogOut } from "lucide-react"
+import { ArrowLeft, Pin, Plus, Trash2, Newspaper, LogOut, PackageCheck, XCircle } from "lucide-react"
 
 function formatDate(dateStr: string) {
   const utc = dateStr.endsWith('Z') || dateStr.includes('+') ? dateStr : dateStr + 'Z'
@@ -159,7 +159,7 @@ export default function UpdatesPage() {
                   onChange={e => setClearResolved(e.target.checked)}
                   className="rounded border-border"
                 />
-                Clear resolved suggestions (added & rejected) after posting
+                Archive resolved suggestions (added & rejected) to this update
               </label>
               <div className="flex gap-2">
                 <Button type="submit" disabled={submitting} className="gap-1.5">
@@ -206,6 +206,67 @@ export default function UpdatesPage() {
                 <div className="border-t border-border pt-3">
                   {renderBody(u.body)}
                 </div>
+                {u.suggestions && u.suggestions.length > 0 && (
+                  <div className="border-t border-border mt-4 pt-3">
+                    <h4 className="text-sm font-semibold text-muted-foreground mb-2">Resolved Suggestions</h4>
+                    <div className="space-y-1">
+                      {u.suggestions.filter(s => s.status === 'added').length > 0 && (
+                        <div>
+                          <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wider flex items-center gap-1 mb-1">
+                            <PackageCheck className="h-3.5 w-3.5" /> Added
+                          </span>
+                          {u.suggestions.filter(s => s.status === 'added').map(s => (
+                            <div key={s.id} className="flex items-center gap-2 text-sm py-0.5 pl-5">
+                              <span className="text-emerald-400">+</span>
+                              {s.mod_url ? (
+                                <a href={s.mod_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{s.mod_name}</a>
+                              ) : (
+                                <span>{s.mod_name}</span>
+                              )}
+                              <span className="text-xs text-muted-foreground">by @{s.username}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {u.suggestions.filter(s => s.status === 'accepted').length > 0 && (
+                        <div className="mt-2">
+                          <span className="text-xs font-semibold text-emerald-400/70 uppercase tracking-wider flex items-center gap-1 mb-1">
+                            Accepted
+                          </span>
+                          {u.suggestions.filter(s => s.status === 'accepted').map(s => (
+                            <div key={s.id} className="flex items-center gap-2 text-sm py-0.5 pl-5">
+                              <span className="text-emerald-400/70">~</span>
+                              {s.mod_url ? (
+                                <a href={s.mod_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{s.mod_name}</a>
+                              ) : (
+                                <span>{s.mod_name}</span>
+                              )}
+                              <span className="text-xs text-muted-foreground">by @{s.username}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {u.suggestions.filter(s => s.status === 'rejected').length > 0 && (
+                        <div className="mt-2">
+                          <span className="text-xs font-semibold text-red-400 uppercase tracking-wider flex items-center gap-1 mb-1">
+                            <XCircle className="h-3.5 w-3.5" /> Rejected
+                          </span>
+                          {u.suggestions.filter(s => s.status === 'rejected').map(s => (
+                            <div key={s.id} className="flex items-center gap-2 text-sm py-0.5 pl-5">
+                              <span className="text-red-400">-</span>
+                              {s.mod_url ? (
+                                <a href={s.mod_url} target="_blank" rel="noopener noreferrer" className="text-primary/60 hover:underline line-through">{s.mod_name}</a>
+                              ) : (
+                                <span className="line-through text-foreground/60">{s.mod_name}</span>
+                              )}
+                              <span className="text-xs text-muted-foreground">by @{s.username}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </Card>
             ))}
           </div>
