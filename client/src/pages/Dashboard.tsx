@@ -143,35 +143,36 @@ export default function Dashboard() {
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         {/* Downloads */}
         {downloads && (
-          <Card className="p-4">
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <Download className="h-4 w-4 text-primary shrink-0" />
-                <span className="text-sm font-medium truncate">{downloads.title}</span>
+          <Card className="p-0 overflow-hidden border-primary/20">
+            <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent px-5 py-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Download className="h-5 w-5 text-primary" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-primary">Latest Release</span>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {downloads.downloads.curseforge && (
-                  <a href={downloads.downloads.curseforge} target="_blank" rel="noopener noreferrer">
-                    <Button size="sm" variant="outline" className="text-orange-400 border-orange-400/30 hover:bg-orange-400/10">
-                      CurseForge
-                    </Button>
-                  </a>
-                )}
-                {downloads.downloads.modrinth && (
-                  <a href={downloads.downloads.modrinth} target="_blank" rel="noopener noreferrer">
-                    <Button size="sm" variant="outline" className="text-emerald-400 border-emerald-400/30 hover:bg-emerald-400/10">
-                      Modrinth
-                    </Button>
-                  </a>
-                )}
-                {downloads.downloads.prism && (
-                  <a href={downloads.downloads.prism} target="_blank" rel="noopener noreferrer">
-                    <Button size="sm" variant="outline" className="text-blue-400 border-blue-400/30 hover:bg-blue-400/10">
-                      Prism Launcher
-                    </Button>
-                  </a>
-                )}
-              </div>
+              <h3 className="text-lg font-bold">{downloads.title}</h3>
+            </div>
+            <div className="px-5 pb-4 pt-3 flex flex-wrap gap-3">
+              {downloads.downloads.curseforge && (
+                <a href={downloads.downloads.curseforge} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-[140px]">
+                  <Button variant="outline" className="w-full gap-2 h-11 text-orange-400 border-orange-400/30 hover:bg-orange-400/10 hover:border-orange-400/50 transition-all">
+                    <Download className="h-4 w-4" /> CurseForge
+                  </Button>
+                </a>
+              )}
+              {downloads.downloads.modrinth && (
+                <a href={downloads.downloads.modrinth} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-[140px]">
+                  <Button variant="outline" className="w-full gap-2 h-11 text-emerald-400 border-emerald-400/30 hover:bg-emerald-400/10 hover:border-emerald-400/50 transition-all">
+                    <Download className="h-4 w-4" /> Modrinth
+                  </Button>
+                </a>
+              )}
+              {downloads.downloads.prism && (
+                <a href={downloads.downloads.prism} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-[140px]">
+                  <Button variant="outline" className="w-full gap-2 h-11 text-blue-400 border-blue-400/30 hover:bg-blue-400/10 hover:border-blue-400/50 transition-all">
+                    <Download className="h-4 w-4" /> Prism Launcher
+                  </Button>
+                </a>
+              )}
             </div>
           </Card>
         )}
