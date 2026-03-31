@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/', requireAuth, (req, res) => {
   try {
     const rows = db.prepare(
-      'SELECT id, title, body, created_at FROM updates ORDER BY created_at DESC'
+      'SELECT id, title, body, downloads, created_at FROM updates ORDER BY created_at DESC'
     ).all();
 
     // Attach archived suggestions to each update
@@ -21,6 +21,7 @@ router.get('/', requireAuth, (req, res) => {
     `);
     for (const row of rows) {
       row.suggestions = stmtSugg.all(row.id);
+      row.downloads = row.downloads ? JSON.parse(row.downloads) : null;
     }
 
     res.json(rows);
@@ -34,7 +35,7 @@ router.get('/', requireAuth, (req, res) => {
 // Optionally clears resolved suggestions (status = added/rejected)
 router.post('/', requireAdmin, (req, res) => {
   try {
-    const { title, body, clearResolved } = req.body;
+    const { title, body, clearResolved, downloads } = req.body;
 
     if (!title || typeof title !== 'string' || !title.trim()) {
       return res.status(400).json({ error: 'Title is required' });
@@ -43,9 +44,29 @@ router.post('/', requireAdmin, (req, res) => {
       return res.status(400).json({ error: 'Body is required' });
     }
 
+    // Validate downloads object if provided
+    let downloadsJson = null;
+    if (downloads && typeof downloads === 'object') {
+      const clean = {};
+      for (const key of ['curseforge', 'modrinth', 'prism']) {
+        if (downloads[key] && typeof downloads[key] === 'string') {
+          const url = downloads[key].trim();
+          if (url) {
+            try {
+              const parsed = new URL(url);
+              if (['http:', 'https:'].includes(parsed.protocol)) {
+                clean[key] = url;
+              }
+            } catch { /* skip invalid URLs */ }
+          }
+        }
+      }
+      if (Object.keys(clean).length > 0) downloadsJson = JSON.stringify(clean);
+    }
+
     const result = db.prepare(
-      'INSERT INTO updates (title, body) VALUES (?, ?)'
-    ).run(title.trim().slice(0, 200), body.trim().slice(0, 10000));
+      'INSERT INTO updates (title, body, downloads) VALUES (?, ?, ?)'
+    ).run(title.trim().slice(0, 200), body.trim().slice(0, 10000), downloadsJson);
 
     // Optionally archive resolved suggestions to this update
     if (clearResolved) {
@@ -58,6 +79,7 @@ router.post('/', requireAdmin, (req, res) => {
       id: result.lastInsertRowid,
       title: title.trim().slice(0, 200),
       body: body.trim().slice(0, 10000),
+      downloads: downloadsJson ? JSON.parse(downloadsJson) : null,
       created_at: new Date().toISOString(),
     });
   } catch (err) {

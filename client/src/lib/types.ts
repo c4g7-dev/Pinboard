@@ -28,10 +28,17 @@ export interface UpdateSuggestion {
   username: string
 }
 
+export interface UpdateDownloads {
+  curseforge?: string
+  modrinth?: string
+  prism?: string
+}
+
 export interface Update {
   id: number
   title: string
   body: string
+  downloads: UpdateDownloads | null
   created_at: string
   suggestions: UpdateSuggestion[]
 }

@@ -35,5 +35,6 @@ CREATE TABLE IF NOT EXISTS updates (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL,
   body TEXT NOT NULL,
+  downloads TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

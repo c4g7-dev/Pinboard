@@ -6,7 +6,7 @@ import { Navigate, Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
-import { ArrowLeft, Pin, Plus, Trash2, Newspaper, LogOut, PackageCheck, XCircle } from "lucide-react"
+import { ArrowLeft, Pin, Plus, Trash2, Newspaper, LogOut, PackageCheck, XCircle, Download } from "lucide-react"
 
 function formatDate(dateStr: string) {
   const utc = dateStr.endsWith('Z') || dateStr.includes('+') ? dateStr : dateStr + 'Z'
@@ -49,6 +49,9 @@ export default function UpdatesPage() {
   const [body, setBody] = useState("")
   const [clearResolved, setClearResolved] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [dlCurseforge, setDlCurseforge] = useState("")
+  const [dlModrinth, setDlModrinth] = useState("")
+  const [dlPrism, setDlPrism] = useState("")
 
   useEffect(() => {
     if (!user) return
@@ -77,11 +80,18 @@ export default function UpdatesPage() {
     if (!title.trim() || !body.trim()) return
     setSubmitting(true)
     try {
-      const data = await api.createUpdate(title.trim(), body.trim(), clearResolved) as Update
+      const downloads: Record<string, string> = {}
+      if (dlCurseforge.trim()) downloads.curseforge = dlCurseforge.trim()
+      if (dlModrinth.trim()) downloads.modrinth = dlModrinth.trim()
+      if (dlPrism.trim()) downloads.prism = dlPrism.trim()
+      const data = await api.createUpdate(title.trim(), body.trim(), clearResolved, Object.keys(downloads).length > 0 ? downloads : undefined) as Update
       setUpdates(prev => [data, ...prev])
       setTitle("")
       setBody("")
       setClearResolved(false)
+      setDlCurseforge("")
+      setDlModrinth("")
+      setDlPrism("")
       setCreating(false)
     } catch { /* ignore */ }
     setSubmitting(false)
@@ -161,6 +171,27 @@ export default function UpdatesPage() {
                 />
                 Archive resolved suggestions (added & rejected) to this update
               </label>
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-muted-foreground">Download Links (optional)</p>
+                <Input
+                  value={dlCurseforge}
+                  onChange={e => setDlCurseforge(e.target.value)}
+                  placeholder="CurseForge download URL"
+                  type="url"
+                />
+                <Input
+                  value={dlModrinth}
+                  onChange={e => setDlModrinth(e.target.value)}
+                  placeholder="Modrinth download URL"
+                  type="url"
+                />
+                <Input
+                  value={dlPrism}
+                  onChange={e => setDlPrism(e.target.value)}
+                  placeholder="Prism Launcher download URL"
+                  type="url"
+                />
+              </div>
               <div className="flex gap-2">
                 <Button type="submit" disabled={submitting} className="gap-1.5">
                   <Plus className="h-4 w-4" /> {submitting ? "Posting..." : "Post Update"}
@@ -206,6 +237,36 @@ export default function UpdatesPage() {
                 <div className="border-t border-border pt-3">
                   {renderBody(u.body)}
                 </div>
+                {u.downloads && (Object.keys(u.downloads).length > 0) && (
+                  <div className="border-t border-border mt-4 pt-3">
+                    <h4 className="text-sm font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
+                      <Download className="h-4 w-4" /> Downloads
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {u.downloads.curseforge && (
+                        <a href={u.downloads.curseforge} target="_blank" rel="noopener noreferrer">
+                          <Button size="sm" variant="outline" className="gap-1.5 text-orange-400 border-orange-400/30 hover:bg-orange-400/10">
+                            CurseForge
+                          </Button>
+                        </a>
+                      )}
+                      {u.downloads.modrinth && (
+                        <a href={u.downloads.modrinth} target="_blank" rel="noopener noreferrer">
+                          <Button size="sm" variant="outline" className="gap-1.5 text-emerald-400 border-emerald-400/30 hover:bg-emerald-400/10">
+                            Modrinth
+                          </Button>
+                        </a>
+                      )}
+                      {u.downloads.prism && (
+                        <a href={u.downloads.prism} target="_blank" rel="noopener noreferrer">
+                          <Button size="sm" variant="outline" className="gap-1.5 text-blue-400 border-blue-400/30 hover:bg-blue-400/10">
+                            Prism Launcher
+                          </Button>
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
                 {u.suggestions && u.suggestions.length > 0 && (
                   <div className="border-t border-border mt-4 pt-3">
                     <h4 className="text-sm font-semibold text-muted-foreground mb-2">Resolved Suggestions</h4>

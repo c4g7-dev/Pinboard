@@ -47,8 +47,8 @@ export const api = {
   // Updates
   listUpdates: () =>
     apiFetch("/api/updates"),
-  createUpdate: (title: string, body: string, clearResolved: boolean = false) =>
-    apiFetch("/api/updates", { method: "POST", body: JSON.stringify({ title, body, clearResolved }) }),
+  createUpdate: (title: string, body: string, clearResolved: boolean = false, downloads?: { curseforge?: string; modrinth?: string; prism?: string }) =>
+    apiFetch("/api/updates", { method: "POST", body: JSON.stringify({ title, body, clearResolved, downloads }) }),
   deleteUpdate: (id: number) =>
     apiFetch(`/api/updates/${id}`, { method: "DELETE" }),
 }
